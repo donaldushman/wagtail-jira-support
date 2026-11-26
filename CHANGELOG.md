@@ -25,3 +25,10 @@ All notable changes to this project will be documented in this file.
 - Connection-scoped cache keys.
 - Validation of service desk and request type availability.
 - Unit tests for metadata retrieval, filtering, and caching.
+- Support request payload preparation and validation.
+- Automatic population of configured Jira custom fields.
+- Conditional population of URL and billing code fields.
+- Application and environment context in request descriptions.
+- Source URL sanitization.
+- Validation of required Jira request fields.
+- Unit tests for request preparation and contextual information.

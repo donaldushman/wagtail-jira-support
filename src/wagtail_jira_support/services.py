@@ -1,14 +1,17 @@
 import hashlib
 import json
+from copy import deepcopy
 
 from django.core.cache import cache
 
 from .client import JiraClient
 from .conf import get_settings, validate_settings
+from .context import build_description, sanitize_source_url
 from .exceptions import (
     JiraAPIError,
     JiraConfigurationError,
     JiraRequestTypeNotFoundError,
+    JiraRequestValidationError,
     JiraServiceDeskNotFoundError,
 )
 
@@ -201,3 +204,112 @@ class JiraSupportService:
             ),
             loader,
         )
+
+    def prepare_request(
+        self,
+        service_desk_id,
+        request_type_id,
+        summary,
+        description,
+        billing_code="",
+        source_url="",
+    ):
+        """Validate and prepare a support request without submitting it."""
+        service_desk_id = str(service_desk_id)
+        request_type_id = str(request_type_id)
+
+        desk = self.get_service_desk_config(service_desk_id)
+
+        if not isinstance(summary, str) or not summary.strip():
+            raise JiraRequestValidationError("A summary is required.")
+
+        if not isinstance(description, str) or not description.strip():
+            raise JiraRequestValidationError("A description is required.")
+
+        summary = summary.strip()
+
+        if len(summary) > 255:
+            raise JiraRequestValidationError(
+                "The summary cannot exceed 255 characters."
+            )
+
+        metadata = self.get_request_type_fields(
+            service_desk_id,
+            request_type_id,
+        )
+
+        available_fields = {
+            field["fieldId"]: field for field in metadata["requestTypeFields"]
+        }
+
+        fields = {}
+
+        # Populate configured default fields.
+        for field_id, value in desk.get("default_fields", {}).items():
+            if field_id not in available_fields:
+                raise JiraConfigurationError(
+                    f"Configured default field {field_id} "
+                    "is unavailable for this request type."
+                )
+
+            fields[field_id] = deepcopy(value)
+
+        # Core request fields always take precedence.
+        fields["summary"] = summary
+
+        source_url = sanitize_source_url(source_url)
+
+        fields["description"] = build_description(
+            description=description,
+            application_name=self.config["APPLICATION_NAME"],
+            environment=self.config["ENVIRONMENT"],
+            source_url=source_url,
+        )
+
+        # Populate the optional URL field when available.
+        url_field = desk.get("url_field")
+
+        if source_url and url_field in available_fields:
+            fields[url_field] = source_url
+
+        # Populate the optional billing code field when available.
+        billing_code_field = desk.get("billing_code_field")
+
+        if (
+            isinstance(billing_code, str)
+            and billing_code.strip()
+            and billing_code_field in available_fields
+        ):
+            fields[billing_code_field] = billing_code.strip()
+
+        # Ensure all submitted fields are supported by Jira.
+        unsupported_fields = set(fields) - set(available_fields)
+
+        if unsupported_fields:
+            raise JiraRequestValidationError(
+                "The selected request type does not support "
+                "all required support request fields."
+            )
+
+        # Ensure all required Jira fields have been populated.
+        missing_fields = []
+
+        for field_id, definition in available_fields.items():
+            if not definition.get("required"):
+                continue
+
+            value = fields.get(field_id)
+
+            if value is None or value == "" or value == [] or value == {}:
+                missing_fields.append(definition.get("name", field_id))
+
+        if missing_fields:
+            raise JiraRequestValidationError(
+                "Missing required Jira fields: " + ", ".join(missing_fields)
+            )
+
+        return {
+            "serviceDeskId": service_desk_id,
+            "requestTypeId": request_type_id,
+            "requestFieldValues": fields,
+        }

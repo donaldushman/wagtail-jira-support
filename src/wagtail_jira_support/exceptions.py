@@ -32,3 +32,7 @@ class JiraServiceDeskNotFoundError(JiraSupportError):
 
 class JiraRequestTypeNotFoundError(JiraSupportError):
     """The requested request type is unavailable or not configured."""
+
+
+class JiraRequestValidationError(JiraSupportError):
+    """A support request contains missing or invalid information."""
