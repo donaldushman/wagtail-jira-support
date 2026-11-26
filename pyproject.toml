@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wagtail-jira-support"
+version = "0.1.0"
+description = "Submit Jira Service Management support requests directly from the Wagtail admin interface."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+
+dependencies = [
+    "Django>=5.2",
+    "wagtail>=7.0",
+    "requests>=2.32",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Django",
+    "Framework :: Wagtail",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "twine",
+    "ruff",
+    "coverage",
+]
+
+[project.urls]
+Homepage = "https://github.com/donaldushman/wagtail-jira-support"
+Repository = "https://github.com/donaldushman/wagtail-jira-support"
+Issues = "https://github.com/donaldushman/wagtail-jira-support/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+wagtail_jira_support = [
+    "templates/**/*.html",
+    "static/**/*",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.coverage.run]
+source = ["wagtail_jira_support"]
+branch = true
