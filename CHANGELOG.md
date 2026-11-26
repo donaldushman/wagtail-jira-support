@@ -18,3 +18,10 @@ All notable changes to this project will be documented in this file.
 - Support request creation, including submission on behalf of users.
 - HTTP authentication, timeout, and error handling.
 - Unit tests for Jira API communication.
+- Django service layer for Jira request metadata.
+- Configurable service desk and request type allowlists.
+- Configuration-driven ordering of service desks and request types.
+- Cached service desk, request type, and field metadata.
+- Connection-scoped cache keys.
+- Validation of service desk and request type availability.
+- Unit tests for metadata retrieval, filtering, and caching.

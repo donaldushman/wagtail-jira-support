@@ -24,3 +24,11 @@ class JiraConnectionError(JiraAPIError):
 
 class JiraUserNotFoundError(JiraSupportError):
     """Unable to resolve the requester to a Jira account."""
+
+
+class JiraServiceDeskNotFoundError(JiraSupportError):
+    """The requested service desk is unavailable or not configured."""
+
+
+class JiraRequestTypeNotFoundError(JiraSupportError):
+    """The requested request type is unavailable or not configured."""
