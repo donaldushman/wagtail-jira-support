@@ -231,3 +231,28 @@ class SupportIndexTests(TestCase):
         self.assertEqual(response.status_code, 405)
 
         self.service_class.assert_not_called()
+
+    def test_request_type_links_are_displayed(self):
+        self.client.force_login(self.authorized_user)
+
+        response = self.client.get(self.url)
+
+        website_url = reverse(
+            "wagtail_jira_support:request",
+            args=[12, 100],
+        )
+
+        salesforce_url = reverse(
+            "wagtail_jira_support:request",
+            args=[52, 200],
+        )
+
+        self.assertContains(
+            response,
+            f'href="{website_url}"',
+        )
+
+        self.assertContains(
+            response,
+            f'href="{salesforce_url}"',
+        )

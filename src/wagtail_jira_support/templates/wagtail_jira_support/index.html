@@ -32,7 +32,9 @@
                         <div class="w-mb-4">
 
                             <h3 class="w-mb-1">
-                                {{ request_type.name }}
+                                <a href="{% url 'wagtail_jira_support:request' desk.id request_type.id %}">
+                                    {{ request_type.name }}
+                                </a>
                             </h3>
 
                             {% if request_type.description %}

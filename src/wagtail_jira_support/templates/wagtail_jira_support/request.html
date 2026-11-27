@@ -1,0 +1,123 @@
+{% extends "wagtailadmin/base.html" %}
+{% load wagtailadmin_tags %}
+
+{% block titletag %}
+    {{ request_type.name|default:page_title }}
+{% endblock %}
+
+{% block content %}
+
+    {% include "wagtailadmin/shared/header.html" with title=page_title icon="help" %}
+
+    <div class="nice-padding">
+
+        <p>
+            <a href="{% url 'wagtail_jira_support:index' %}">
+                &larr; All support options
+            </a>
+        </p>
+
+        {% if request_type %}
+
+            <h2>{{ request_type.name }}</h2>
+
+            <p>{{ service_desk.projectName }}</p>
+
+            {% if request_type.description %}
+                <p>{{ request_type.description }}</p>
+            {% endif %}
+
+            {% if request_type.helpText %}
+                <div class="w-mb-6">
+                    {{ request_type.helpText|linebreaks }}
+                </div>
+            {% endif %}
+
+        {% endif %}
+
+        {% if error %}
+
+            <div role="alert">
+                <p>{{ error }}</p>
+            </div>
+
+        {% elif prepared %}
+
+            <div role="status">
+                <h2>Request validated successfully</h2>
+
+                <p>
+                    Your support request was prepared successfully.
+                    No Jira ticket has been created.
+                </p>
+
+                <p>
+                    Ticket submission is not yet enabled.
+                </p>
+            </div>
+
+            <a href="{% url 'wagtail_jira_support:index' %}"
+               class="button">
+                Return to support options
+            </a>
+
+        {% elif form %}
+
+            <form method="post" novalidate>
+
+                {% csrf_token %}
+
+                {{ form.non_field_errors }}
+
+                <ul class="fields">
+
+                    {% for field in form %}
+                        <li>
+                            {% formattedfield field %}
+                        </li>
+                    {% endfor %}
+
+                </ul>
+
+                <section class="w-mt-6 w-mb-6">
+
+                    <h3>Application context</h3>
+
+                    <dl>
+                        <dt>Application</dt>
+                        <dd>{{ application_name }}</dd>
+
+                        {% if environment %}
+                            <dt>Environment</dt>
+                            <dd>{{ environment }}</dd>
+                        {% endif %}
+                    </dl>
+
+                    <p class="help">
+                        Application information will automatically
+                        be included with your support request.
+                    </p>
+
+                </section>
+
+                <p class="help">
+                    Ticket submission is not yet enabled.
+                    This form currently validates requests only.
+                </p>
+
+                <button type="submit" class="button">
+                    Validate support request
+                </button>
+
+                <a href="{% url 'wagtail_jira_support:index' %}"
+                   class="button button-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+        {% endif %}
+
+    </div>
+
+{% endblock %}

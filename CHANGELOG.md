@@ -40,3 +40,10 @@ All notable changes to this project will be documented in this file.
 - Graceful handling of Jira API failures.
 - Wagtail integration test environment.
 - Automated tests for admin views, menu hooks, and permissions.
+- Dedicated support request forms for configured Jira request types.
+- Clickable request type navigation.
+- Dynamic display of Jira request instructions.
+- Native Wagtail form styling and validation.
+- Conditional display of the optional billing code field.
+- Validation-only support request workflow.
+- Automated form, request view, and CSRF protection tests.
