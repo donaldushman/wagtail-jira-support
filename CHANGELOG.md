@@ -32,3 +32,11 @@ All notable changes to this project will be documented in this file.
 - Source URL sanitization.
 - Validation of required Jira request fields.
 - Unit tests for request preparation and contextual information.
+- Native Wagtail admin support interface.
+- Configurable support menu label and ordering.
+- Service desk and request type landing page.
+- Dynamic display of Jira request type descriptions.
+- Wagtail admin permission enforcement.
+- Graceful handling of Jira API failures.
+- Wagtail integration test environment.
+- Automated tests for admin views, menu hooks, and permissions.

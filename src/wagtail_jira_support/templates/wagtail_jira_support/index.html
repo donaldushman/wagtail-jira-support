@@ -1,0 +1,62 @@
+{% extends "wagtailadmin/base.html" %}
+
+{% block titletag %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    {% include "wagtailadmin/shared/header.html" with title=page_title icon="help" %}
+
+    <div class="nice-padding">
+
+        <p>
+            Submit a support request for {{ application_name }}.
+            Select the service desk and request type that best
+            describe your request.
+        </p>
+
+        {% if error %}
+
+            <div role="alert">
+                <p>{{ error }}</p>
+            </div>
+
+        {% else %}
+
+            {% for desk in service_desks %}
+
+                <section class="w-mb-8">
+
+                    <h2>{{ desk.name }}</h2>
+
+                    {% for request_type in desk.request_types %}
+
+                        <div class="w-mb-4">
+
+                            <h3 class="w-mb-1">
+                                {{ request_type.name }}
+                            </h3>
+
+                            {% if request_type.description %}
+                                <p>{{ request_type.description }}</p>
+                            {% endif %}
+
+                        </div>
+
+                    {% empty %}
+
+                        <p>No request types are currently available.</p>
+
+                    {% endfor %}
+
+                </section>
+
+            {% empty %}
+
+                <p>No support options are currently available.</p>
+
+            {% endfor %}
+
+        {% endif %}
+
+    </div>
+
+{% endblock %}
