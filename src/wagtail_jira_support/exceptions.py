@@ -36,3 +36,7 @@ class JiraRequestTypeNotFoundError(JiraSupportError):
 
 class JiraRequestValidationError(JiraSupportError):
     """A support request contains missing or invalid information."""
+
+
+class JiraUserAmbiguousError(JiraSupportError):
+    """Multiple Jira accounts match the requester."""

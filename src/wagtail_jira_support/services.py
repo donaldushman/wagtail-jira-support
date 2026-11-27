@@ -13,6 +13,8 @@ from .exceptions import (
     JiraRequestTypeNotFoundError,
     JiraRequestValidationError,
     JiraServiceDeskNotFoundError,
+    JiraUserAmbiguousError,
+    JiraUserNotFoundError,
 )
 
 
@@ -313,3 +315,53 @@ class JiraSupportService:
             "requestTypeId": request_type_id,
             "requestFieldValues": fields,
         }
+
+    def resolve_requester(self, email):
+        """Resolve an email address to an active Jira account ID."""
+        if not isinstance(email, str) or not email.strip():
+            raise JiraUserNotFoundError(
+                "An email address is required to identify the requester in Jira."
+            )
+
+        email = email.strip()
+        normalized_email = email.casefold()
+
+        with self._get_client() as client:
+            users = client.search_users(email)
+
+        if not isinstance(users, list):
+            raise JiraAPIError("Jira returned an invalid user search response.")
+
+        matches = []
+
+        for user in users:
+            if not isinstance(user, dict):
+                raise JiraAPIError("Jira returned an invalid user record.")
+
+            user_email = user.get("emailAddress")
+
+            if not isinstance(user_email, str):
+                continue
+
+            if user_email.strip().casefold() == normalized_email:
+                matches.append(user)
+
+        if not matches:
+            raise JiraUserNotFoundError("Unable to identify a matching Jira account.")
+
+        if len(matches) > 1:
+            raise JiraUserAmbiguousError("Multiple Jira accounts match the requester.")
+
+        user = matches[0]
+
+        if user.get("active") is not True:
+            raise JiraUserNotFoundError("The matching Jira account is inactive.")
+
+        account_id = user.get("accountId")
+
+        if not isinstance(account_id, str) or not account_id.strip():
+            raise JiraUserNotFoundError(
+                "The matching Jira account has no valid account ID."
+            )
+
+        return account_id.strip()

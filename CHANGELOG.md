@@ -47,3 +47,8 @@ All notable changes to this project will be documented in this file.
 - Conditional display of the optional billing code field.
 - Validation-only support request workflow.
 - Automated form, request view, and CSRF protection tests.
+- Jira requester resolution using email addresses.
+- Case-insensitive exact email matching.
+- Active account and account ID validation.
+- Detection of missing and ambiguous Jira accounts.
+- Automated requester resolution tests.
