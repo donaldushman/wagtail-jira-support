@@ -6,7 +6,7 @@ from django.core.cache import cache
 
 from .client import JiraClient
 from .conf import get_settings, validate_settings
-from .context import build_description, sanitize_source_url
+from .context import build_description, sanitize_source_url, validate_portal_url
 from .exceptions import (
     JiraAPIError,
     JiraConfigurationError,
@@ -431,7 +431,10 @@ class JiraSupportService:
             links = {}
 
         return {
-            "issue_key": issue_key,
+            "issue_key": issue_key.strip(),
             "issue_id": result.get("issueId"),
-            "portal_url": links.get("web", ""),
+            "portal_url": validate_portal_url(
+                links.get("web", ""),
+                self.config["BASE_URL"],
+            ),
         }

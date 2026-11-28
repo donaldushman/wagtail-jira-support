@@ -13,7 +13,7 @@
 
         <p>
             <a href="{% url 'wagtail_jira_support:index' %}">
-                &larr; All support options
+                < All support options
             </a>
         </p>
 
@@ -25,12 +25,6 @@
 
             {% if request_type.description %}
                 <p>{{ request_type.description }}</p>
-            {% endif %}
-
-            {% if request_type.helpText %}
-                <div class="w-mb-6">
-                    {{ request_type.helpText|linebreaks }}
-                </div>
             {% endif %}
 
         {% endif %}
@@ -78,6 +72,16 @@
                     {% endfor %}
 
                 </ul>
+                {% if submission_enabled %}
+                    <p>
+                        <strong>Requester:</strong>
+                        {% if requester_name %}
+                            {{ requester_name }} ({{ requester_email }})
+                        {% else %}
+                            {{ requester_email }}
+                        {% endif %}
+                    </p>
+                {% endif %}
 
                 <section class="w-mt-6 w-mb-6">
 
@@ -100,18 +104,30 @@
 
                 </section>
 
-                <p class="help">
-                    Ticket submission is not yet enabled.
-                    This form currently validates requests only.
-                </p>
+                {% if not submission_enabled %}
+                    <p class="help">
+                        Ticket submission is not yet enabled.
+                        This form currently validates requests only.
+                    </p>
+                {% endif %}
 
-                <button type="submit" class="button">
-                    Validate support request
-                </button>
+                {% if not submission_uncertain %}
+                    <button type="submit" class="button">
+                        {% if submission_enabled %}
+                            Submit support request
+                        {% else %}
+                            Validate support request
+                        {% endif %}
+                    </button>
+                {% endif %}
 
                 <a href="{% url 'wagtail_jira_support:index' %}"
-                   class="button button-secondary">
-                    Cancel
+                class="button button-secondary">
+                    {% if submission_uncertain %}
+                        Return to support options
+                    {% else %}
+                        Cancel
+                    {% endif %}
                 </a>
 
             </form>

@@ -59,3 +59,36 @@ def build_description(
         lines.append(f"Source URL: {source_url}")
 
     return "\n".join(lines)
+
+
+def validate_portal_url(url, base_url):
+    """Return a portal URL only if it belongs to the configured Jira instance."""
+    if not isinstance(url, str) or not url:
+        return ""
+
+    try:
+        parsed = urlsplit(url)
+        base = urlsplit(base_url)
+
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != base.hostname
+            or parsed.port != base.port
+            or parsed.username is not None
+            or parsed.password is not None
+            or not parsed.path.startswith("/servicedesk/customer/portal/")
+        ):
+            return ""
+
+        return urlunsplit(
+            (
+                parsed.scheme,
+                parsed.netloc,
+                parsed.path,
+                "",
+                "",
+            )
+        )
+
+    except ValueError:
+        return ""

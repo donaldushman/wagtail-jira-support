@@ -57,3 +57,16 @@ All notable changes to this project will be documented in this file.
 - Support request creation response validation.
 - Explicit handling of uncertain submission outcomes.
 - Automated submission and API error-handling tests.
+- Configurable validation-only and live submission modes.
+- Support request submission directly from Wagtail.
+- Authenticated requester name and email display.
+- Session-backed request confirmation pages.
+- POST/Redirect/GET submission workflow.
+- Jira customer portal URL validation.
+- Preservation of form data following submission errors.
+- User-facing warnings for uncertain submission outcomes.
+- Automated submission and confirmation view tests.
+
+### Changed
+- Omit Jira portal-specific request instructions from Wagtail forms.
+- Improve support request description field guidance. 

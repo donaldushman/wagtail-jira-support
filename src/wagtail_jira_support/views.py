@@ -2,7 +2,7 @@ import logging
 
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_http_methods
 
 from .conf import get_settings
@@ -10,7 +10,10 @@ from .exceptions import (
     JiraRequestTypeNotFoundError,
     JiraRequestValidationError,
     JiraServiceDeskNotFoundError,
+    JiraSubmissionUncertainError,
     JiraSupportError,
+    JiraUserAmbiguousError,
+    JiraUserNotFoundError,
 )
 from .forms import SupportRequestForm
 from .services import JiraSupportService
@@ -92,7 +95,6 @@ def index(request):
 
 @require_http_methods(["GET", "POST"])
 def support_request(request, service_desk_id, request_type_id):
-    """Display and validate a support request form."""
     config = check_support_access(request)
 
     service_desk_id = str(service_desk_id)
@@ -102,9 +104,13 @@ def support_request(request, service_desk_id, request_type_id):
         "page_title": config["MENU_LABEL"],
         "application_name": config["APPLICATION_NAME"],
         "environment": config["ENVIRONMENT"],
+        "submission_enabled": config["SUBMISSION_ENABLED"],
         "form": None,
         "error": None,
         "prepared": False,
+        "submission_uncertain": False,
+        "requester_name": request.user.get_full_name(),
+        "requester_email": request.user.email,
     }
 
     try:
@@ -154,22 +160,76 @@ def support_request(request, service_desk_id, request_type_id):
         )
 
         if request.method == "POST" and form.is_valid():
+            request_data = {
+                "service_desk_id": service_desk_id,
+                "request_type_id": request_type_id,
+                "summary": form.cleaned_data["summary"],
+                "description": form.cleaned_data["description"],
+                "billing_code": form.cleaned_data.get("billing_code", ""),
+            }
+
             try:
-                service.prepare_request(
-                    service_desk_id=service_desk_id,
-                    request_type_id=request_type_id,
-                    summary=form.cleaned_data["summary"],
-                    description=form.cleaned_data["description"],
-                    billing_code=form.cleaned_data.get("billing_code", ""),
-                )
+                if config["SUBMISSION_ENABLED"]:
+                    result = service.submit_request(
+                        requester_email=request.user.email,
+                        **request_data,
+                    )
+
+                    request.session["wagtail_jira_support_confirmation"] = {
+                        "user_id": str(request.user.pk),
+                        "issue_key": result["issue_key"],
+                        "portal_url": result["portal_url"],
+                        "service_desk": service_desk["projectName"],
+                        "request_type": request_type["name"],
+                        "application_name": config["APPLICATION_NAME"],
+                    }
+
+                    return redirect("wagtail_jira_support:confirmation")
+
+                service.prepare_request(**request_data)
+                context["prepared"] = True
 
             except JiraRequestValidationError as exc:
                 form.add_error(None, str(exc))
 
-            else:
-                # Temporary validation-only behavior.
-                # No Jira ticket is created.
-                context["prepared"] = True
+            except JiraUserNotFoundError:
+                form.add_error(
+                    None,
+                    "We could not identify your Jira account. "
+                    "Please contact support for assistance.",
+                )
+
+            except JiraUserAmbiguousError:
+                form.add_error(
+                    None,
+                    "We could not uniquely identify your Jira "
+                    "account. Please contact support for assistance.",
+                )
+
+            except JiraSubmissionUncertainError:
+                logger.warning("Unable to confirm Jira support request submission.")
+
+                context["submission_uncertain"] = True
+
+                form.add_error(
+                    None,
+                    "Your request may have been created, but we "
+                    "could not confirm the result. Please check "
+                    "the Jira Service Desk before submitting "
+                    "another request.",
+                )
+
+            except JiraSupportError as exc:
+                logger.warning(
+                    "Unable to submit Jira support request: %s",
+                    type(exc).__name__,
+                )
+
+                form.add_error(
+                    None,
+                    "Unable to submit your support request. "
+                    "Please try again later or contact support.",
+                )
 
     except (
         JiraServiceDeskNotFoundError,
@@ -179,7 +239,7 @@ def support_request(request, service_desk_id, request_type_id):
 
     except JiraSupportError as exc:
         logger.warning(
-            "Unable to prepare Jira support request: %s",
+            "Unable to retrieve Jira support metadata: %s",
             type(exc).__name__,
         )
 
@@ -191,4 +251,23 @@ def support_request(request, service_desk_id, request_type_id):
         request,
         "wagtail_jira_support/request.html",
         context,
+    )
+
+
+@require_GET
+def confirmation(request):
+    config = check_support_access(request)
+
+    result = request.session.get("wagtail_jira_support_confirmation")
+
+    if not isinstance(result, dict) or result.get("user_id") != str(request.user.pk):
+        return redirect("wagtail_jira_support:index")
+
+    return render(
+        request,
+        "wagtail_jira_support/confirmation.html",
+        {
+            "page_title": config["MENU_LABEL"],
+            "result": result,
+        },
     )

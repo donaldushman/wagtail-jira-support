@@ -1,0 +1,57 @@
+{% extends "wagtailadmin/base.html" %}
+{% load wagtailadmin_tags %}
+
+{% block titletag %}Support request submitted{% endblock %}
+
+{% block content %}
+    {% include "wagtailadmin/shared/header.html" with title=page_title icon="help" %}
+
+    <div class="nice-padding">
+
+        <h2>Support request submitted</h2>
+
+        <p>
+            Your support request has been successfully submitted
+            to the {{ result.service_desk }} service desk.
+        </p>
+
+        <section class="w-mt-6 w-mb-6">
+
+            <h3>Request details</h3>
+
+            <dl>
+                <dt>Request number</dt>
+                <dd>
+                    <strong>{{ result.issue_key }}</strong>
+                </dd>
+
+                <dt>Service desk</dt>
+                <dd>{{ result.service_desk }}</dd>
+
+                <dt>Request type</dt>
+                <dd>{{ result.request_type }}</dd>
+
+                <dt>Application</dt>
+                <dd>{{ result.application_name }}</dd>
+            </dl>
+
+        </section>
+
+        {% if result.portal_url %}
+            <p>
+                You can view your request and provide additional
+                information through the Jira Service Desk.
+            </p>
+
+            <a href="{{ result.portal_url }}" class="button">
+                View request in Jira
+            </a>
+        {% endif %}
+
+        <a href="{% url 'wagtail_jira_support:index' %}"
+           class="button button-secondary">
+            Return to support options
+        </a>
+
+    </div>
+{% endblock %}

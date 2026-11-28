@@ -13,7 +13,11 @@ class SupportRequestForm(forms.Form):
     description = forms.CharField(
         label="Description",
         widget=forms.Textarea(attrs={"rows": 8}),
-        help_text="Provide enough information to help us understand your request.",
+        help_text=(
+            "Describe your request in detail. Where applicable, "
+            "include steps to reproduce the problem and any "
+            "relevant error messages."
+        ),
     )
 
     billing_code = forms.CharField(

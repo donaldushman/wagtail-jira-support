@@ -7,6 +7,7 @@ from .exceptions import JiraConfigurationError
 
 DEFAULTS = {
     "ENABLED": False,
+    "SUBMISSION_ENABLED": False,
     "BASE_URL": "",
     "EMAIL": "",
     "API_TOKEN": "",
@@ -46,6 +47,9 @@ def validate_settings(config=None):
 
     if not config["ENABLED"]:
         return
+
+    if not isinstance(config["SUBMISSION_ENABLED"], bool):
+        raise JiraConfigurationError("SUBMISSION_ENABLED must be a boolean.")
 
     required_settings = (
         "BASE_URL",

@@ -3,6 +3,7 @@ from django.test import SimpleTestCase
 from wagtail_jira_support.context import (
     build_description,
     sanitize_source_url,
+    validate_portal_url,
 )
 
 
@@ -138,3 +139,64 @@ class BuildDescriptionTests(SimpleTestCase):
         )
 
         self.assertNotIn("token=secret", result)
+
+
+class PortalURLTests(SimpleTestCase):
+    base_url = "https://example.atlassian.net"
+
+    portal_url = "https://example.atlassian.net/servicedesk/customer/portal/12/WD-123"
+
+    def test_valid_portal_url(self):
+        self.assertEqual(
+            validate_portal_url(
+                self.portal_url,
+                self.base_url,
+            ),
+            self.portal_url,
+        )
+
+    def test_query_string_and_fragment_removed(self):
+        self.assertEqual(
+            validate_portal_url(
+                self.portal_url + "?token=secret#section",
+                self.base_url,
+            ),
+            self.portal_url,
+        )
+
+    def test_invalid_portal_urls(self):
+        urls = [
+            None,
+            "",
+            123,
+            "/servicedesk/customer/portal/12/WD-123",
+            "javascript:alert(1)",
+            self.portal_url.replace("https:", "http:"),
+            self.portal_url.replace(
+                "example.atlassian.net",
+                "other.example.com",
+            ),
+            self.portal_url.replace(
+                "example.atlassian.net",
+                "example.atlassian.net:8443",
+            ),
+            self.portal_url.replace(
+                "example.atlassian.net",
+                "user:password@example.atlassian.net",
+            ),
+            self.portal_url.replace(
+                "example.atlassian.net",
+                "example.atlassian.net:invalid",
+            ),
+            "https://example.atlassian.net/browse/WD-123",
+        ]
+
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(
+                    validate_portal_url(
+                        url,
+                        self.base_url,
+                    ),
+                    "",
+                )

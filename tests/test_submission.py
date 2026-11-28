@@ -442,3 +442,17 @@ class SubmissionTests(SimpleTestCase):
 
         self.assertEqual(result["issue_key"], "WD-123")
         self.assertEqual(result["portal_url"], "")
+
+    def test_invalid_portal_url_does_not_invalidate_submission(self):
+        self.client.create_request.return_value = {
+            "issueId": "12345",
+            "issueKey": "WD-123",
+            "_links": {
+                "web": "https://other.example.com/request/",
+            },
+        }
+
+        result = self.submit()
+
+        self.assertEqual(result["issue_key"], "WD-123")
+        self.assertEqual(result["portal_url"], "")
