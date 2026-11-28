@@ -52,3 +52,8 @@ All notable changes to this project will be documented in this file.
 - Active account and account ID validation.
 - Detection of missing and ambiguous Jira accounts.
 - Automated requester resolution tests.
+- Jira support request submission on behalf of authenticated requesters.
+- Validation of Jira raise-on-behalf-of permissions.
+- Support request creation response validation.
+- Explicit handling of uncertain submission outcomes.
+- Automated submission and API error-handling tests.

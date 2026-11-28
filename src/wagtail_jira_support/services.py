@@ -10,9 +10,12 @@ from .context import build_description, sanitize_source_url
 from .exceptions import (
     JiraAPIError,
     JiraConfigurationError,
+    JiraConnectionError,
+    JiraPermissionError,
     JiraRequestTypeNotFoundError,
     JiraRequestValidationError,
     JiraServiceDeskNotFoundError,
+    JiraSubmissionUncertainError,
     JiraUserAmbiguousError,
     JiraUserNotFoundError,
 )
@@ -365,3 +368,70 @@ class JiraSupportService:
             )
 
         return account_id.strip()
+
+    def submit_request(
+        self,
+        service_desk_id,
+        request_type_id,
+        requester_email,
+        summary,
+        description,
+        billing_code="",
+        source_url="",
+    ):
+        """Submit a validated support request on behalf of a requester."""
+        payload = self.prepare_request(
+            service_desk_id=service_desk_id,
+            request_type_id=request_type_id,
+            summary=summary,
+            description=description,
+            billing_code=billing_code,
+            source_url=source_url,
+        )
+
+        metadata = self.get_request_type_fields(
+            service_desk_id,
+            request_type_id,
+        )
+
+        if metadata.get("canRaiseOnBehalfOf") is not True:
+            raise JiraPermissionError(
+                "The Jira integration account cannot raise "
+                "requests on behalf of other users."
+            )
+
+        account_id = self.resolve_requester(requester_email)
+
+        with self._get_client() as client:
+            try:
+                result = client.create_request(
+                    service_desk_id=payload["serviceDeskId"],
+                    request_type_id=payload["requestTypeId"],
+                    fields=payload["requestFieldValues"],
+                    raise_on_behalf_of=account_id,
+                )
+            except JiraConnectionError:
+                raise JiraSubmissionUncertainError(
+                    "Unable to confirm whether Jira created the support request."
+                ) from None
+
+        if not isinstance(result, dict):
+            raise JiraSubmissionUncertainError(
+                "Jira returned an unexpected submission response."
+            )
+
+        issue_key = result.get("issueKey")
+
+        if not isinstance(issue_key, str) or not issue_key.strip():
+            raise JiraSubmissionUncertainError("Jira did not return a valid issue key.")
+
+        links = result.get("_links")
+
+        if not isinstance(links, dict):
+            links = {}
+
+        return {
+            "issue_key": issue_key,
+            "issue_id": result.get("issueId"),
+            "portal_url": links.get("web", ""),
+        }

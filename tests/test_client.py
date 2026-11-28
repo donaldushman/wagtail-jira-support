@@ -9,6 +9,7 @@ from wagtail_jira_support.exceptions import (
     JiraAuthenticationError,
     JiraConnectionError,
     JiraPermissionError,
+    JiraSubmissionUncertainError,
 )
 
 
@@ -354,3 +355,90 @@ class JiraClientTests(SimpleTestCase):
                 self.assertIs(client, self.client)
 
             close.assert_called_once()
+
+
+class JiraSubmissionClientTests(SimpleTestCase):
+    def setUp(self):
+        self.client = JiraClient(
+            base_url="https://example.atlassian.net",
+            email="integration@example.com",
+            api_token="test-token",
+        )
+
+        self.addCleanup(self.client.close)
+
+        patcher = patch.object(
+            self.client.session,
+            "request",
+        )
+
+        self.request = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def create_request(self):
+        return self.client.create_request(
+            service_desk_id="12",
+            request_type_id="100",
+            fields={
+                "summary": "Example problem",
+                "description": "Example description.",
+            },
+            raise_on_behalf_of="example-account-id",
+        )
+
+    def test_post_server_errors_are_uncertain(self):
+        for status_code in (500, 502, 503, 504):
+            with self.subTest(status_code=status_code):
+                self.request.reset_mock()
+
+                response = Mock()
+                response.status_code = status_code
+
+                self.request.return_value = response
+
+                with self.assertRaises(JiraSubmissionUncertainError):
+                    self.create_request()
+
+                self.request.assert_called_once()
+
+    def test_get_server_error_is_api_error(self):
+        response = Mock()
+        response.status_code = 500
+
+        self.request.return_value = response
+
+        with self.assertRaises(JiraAPIError):
+            self.client.get_current_user()
+
+    def test_post_invalid_json_is_uncertain(self):
+        response = Mock()
+        response.status_code = 201
+        response.json.side_effect = ValueError("Invalid JSON")
+
+        self.request.return_value = response
+
+        with self.assertRaises(JiraSubmissionUncertainError):
+            self.create_request()
+
+        self.request.assert_called_once()
+
+    def test_get_invalid_json_is_api_error(self):
+        response = Mock()
+        response.status_code = 200
+        response.json.side_effect = ValueError("Invalid JSON")
+
+        self.request.return_value = response
+
+        with self.assertRaises(JiraAPIError):
+            self.client.get_current_user()
+
+    def test_post_client_error_is_api_error(self):
+        response = Mock()
+        response.status_code = 400
+
+        self.request.return_value = response
+
+        with self.assertRaises(JiraAPIError):
+            self.create_request()
+
+        self.request.assert_called_once()

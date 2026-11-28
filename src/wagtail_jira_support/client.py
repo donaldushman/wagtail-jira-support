@@ -7,6 +7,7 @@ from .exceptions import (
     JiraAuthenticationError,
     JiraConnectionError,
     JiraPermissionError,
+    JiraSubmissionUncertainError,
 )
 
 
@@ -70,6 +71,12 @@ class JiraClient:
         if response.status_code == 403:
             raise JiraPermissionError("Permission denied by Jira.")
 
+        if method.upper() == "POST" and response.status_code >= 500:
+            raise JiraSubmissionUncertainError(
+                "Jira encountered a server error during submission. "
+                "The outcome could not be confirmed."
+            )
+
         if not 200 <= response.status_code < 300:
             raise JiraAPIError(f"Jira returned HTTP {response.status_code}.")
 
@@ -79,6 +86,11 @@ class JiraClient:
         try:
             return response.json()
         except ValueError:
+            if method.upper() == "POST":
+                raise JiraSubmissionUncertainError(
+                    "Jira accepted the request but returned an invalid JSON response."
+                ) from None
+
             raise JiraAPIError("Jira returned an invalid JSON response.") from None
 
     def _get_paginated(self, path, params=None):

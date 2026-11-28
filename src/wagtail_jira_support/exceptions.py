@@ -40,3 +40,7 @@ class JiraRequestValidationError(JiraSupportError):
 
 class JiraUserAmbiguousError(JiraSupportError):
     """Multiple Jira accounts match the requester."""
+
+
+class JiraSubmissionUncertainError(JiraSupportError):
+    """The outcome of a Jira request submission could not be confirmed."""
